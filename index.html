@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<title>Ruta Dante · Barcelona</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root {
+  --bg:#f3f4f6; --card:#ffffff; --ink:#0f172a; --muted:#64748b; --line:#e5e7eb;
+  --dark:#0b0d10; --blue:#2563eb; --blue2:#1d4ed8; --green:#15803d; --green-bg:#dcfce7;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+.app{max-width:900px;margin:auto;padding:14px 14px 110px}
+.topbar{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin:4px 0 12px}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:26px;line-height:1.05;margin:4px 0 5px;font-weight:900;letter-spacing:-.03em}
+.subtitle{font-size:14px;color:var(--muted)}
+.pill{background:var(--dark);color:white;padding:8px 10px;border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 6px 24px rgba(15,23,42,.05)}
+.progress{padding:16px;margin-bottom:12px}
+.progress-head{display:flex;justify-content:space-between;gap:12px;align-items:end}
+.big{font-size:25px;font-weight:900;letter-spacing:-.03em}
+.muted{color:var(--muted);font-size:13px}
+.track{height:9px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:12px}
+.fill{height:100%;width:0;background:linear-gradient(90deg,#111827,#374151);border-radius:999px;transition:.2s}
+
+.map-card{overflow:hidden;margin-bottom:14px}
+.map-head{padding:14px 15px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line)}
+.map-head strong{font-size:15px}
+.map-note{font-size:11px;color:var(--muted);text-align:right}
+#map{height:410px;background:#e8edf2}
+.leaflet-control-attribution{font-size:9px!important}
+.num-icon{width:31px;height:31px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--dark);color:#fff;border:3px solid white;font-size:12px;font-weight:900;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.num-icon.done{background:var(--green)}
+.route-summary{padding:12px 14px;border-top:1px solid var(--line);display:flex;gap:8px;overflow:auto}
+.chip{flex:0 0 auto;padding:7px 9px;border-radius:999px;background:#f8fafc;border:1px solid var(--line);font-size:11px;font-weight:800;color:#334155}
+
+.section-title{display:flex;justify-content:space-between;align-items:center;margin:18px 2px 9px}
+.section-title h2{margin:0;font-size:17px;font-weight:900;letter-spacing:-.02em}
+.section-title span{font-size:12px;color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:9px}
+
+.stop{padding:13px;display:grid;grid-template-columns:46px minmax(0,1fr);gap:11px;transition:.15s}
+.stop.done{opacity:.58}
+.order{height:46px;width:46px;border-radius:14px;background:var(--dark);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900}
+.stop.done .order{background:var(--green)}
+.stop-top{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.stop-title{font-size:15px;font-weight:900;line-height:1.15}
+.stop-id{color:var(--muted);font-size:11px;font-weight:800}
+.address{font-size:13px;line-height:1.35;margin-top:5px;color:#334155}
+.buttons{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:11px}
+.btn{border:0;border-radius:12px;min-height:43px;padding:10px 12px;font-size:13px;font-weight:850;text-decoration:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.btn.maps{background:var(--blue);color:white}
+.btn.maps:active{background:var(--blue2);transform:scale(.99)}
+.check-wrap{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:0 11px;background:#fff;font-size:12px;font-weight:850}
+.check-wrap input{width:21px;height:21px;accent-color:var(--green)}
+
+.bottom{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(243,244,246,.93);backdrop-filter:blur(14px);border-top:1px solid rgba(226,232,240,.9);z-index:900}
+.bottom-inner{max-width:900px;margin:auto;display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.next{background:var(--dark);color:#fff}
+.fullroute{background:white;color:var(--ink);border:1px solid var(--line)}
+.statusdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#22c55e;margin-right:6px}
+
+@media(max-width:560px){
+  .app{padding:10px 10px 100px}
+  h1{font-size:23px}
+  #map{height:355px}
+  .map-note{max-width:150px}
+  .buttons{grid-template-columns:1fr}
+  .check-wrap{min-height:43px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">Ruta de trabajo</div>
+      <h1>Dante · Barcelona</h1>
+      <div class="subtitle"><span class="statusdot"></span>11 ubicaciones · progreso manual</div>
+    </div>
+    <div class="pill" id="topPill">0 / 11</div>
+  </header>
+
+  <section class="card progress">
+    <div class="progress-head">
+      <div>
+        <div class="muted">Progreso de la ruta</div>
+        <div class="big" id="counter">0 completadas</div>
+      </div>
+      <div class="muted" id="remaining">11 pendientes</div>
+    </div>
+    <div class="track"><div class="fill" id="fill"></div></div>
+  </section>
+
+  <section class="card map-card">
+    <div class="map-head">
+      <div>
+        <strong>Ruta completa</strong>
+        <div class="muted">Todos los puntos visibles</div>
+      </div>
+      <div class="map-note">Pulsa un número para ver la ubicación</div>
+    </div>
+    <div id="map"></div>
+    <div class="route-summary">
+      <span class="chip">1 Marina de Port</span>
+      <span class="chip">2 Sant Antoni</span>
+      <span class="chip">3–7 Raval</span>
+      <span class="chip">8 Gràcia</span>
+      <span class="chip">9 Teixonera</span>
+      <span class="chip">10 Sant Genís</span>
+      <span class="chip">11 Turó de la Peira</span>
+    </div>
+  </section>
+
+  <div class="section-title">
+    <h2>Paradas</h2>
+    <span>marca y desmarca manualmente</span>
+  </div>
+  <main id="list" class="list"></main>
+</div>
+
+<div class="bottom">
+  <div class="bottom-inner">
+    <button class="btn next" id="nextBtn">Ir al siguiente</button>
+    <a class="btn fullroute" id="routeBtn" target="_blank" rel="noopener">Ruta en Google Maps</a>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const points = [{"id": "017", "order": 1, "address": "Carrer dels Ferrocarrils Catalans 91, 08038 Barcelona", "barri": "Marina de Port", "lat": 41.3608, "lon": 2.1445}, {"id": "013", "order": 2, "address": "Carrer de Viladomat 109, 08015 Barcelona", "barri": "Sant Antoni", "lat": 41.3787, "lon": 2.1559}, {"id": "016", "order": 3, "address": "Carrer de la Cera 33, 08001 Barcelona", "barri": "Raval", "lat": 41.37864, "lon": 2.16592}, {"id": "010", "order": 4, "address": "Carrer de la Cera 15, 08001 Barcelona", "barri": "Raval", "lat": 41.3783, "lon": 2.1666}, {"id": "008", "order": 5, "address": "Carrer de Joaquín Costa 18, 08001 Barcelona", "barri": "Raval", "lat": 41.38176, "lon": 2.16671}, {"id": "011", "order": 6, "address": "Carrer d'en Robador 8, 08001 Barcelona", "barri": "Raval", "lat": 41.3783, "lon": 2.1697}, {"id": "015", "order": 7, "address": "Carrer de Valldonzella 50, 08001 Barcelona", "barri": "Raval", "lat": 41.384, "lon": 2.1654}, {"id": "012", "order": 8, "address": "Carrer de Ramón y Cajal 156, 08024 Barcelona", "barri": "Vila de Gràcia", "lat": 41.4057, "lon": 2.1614}, {"id": "007", "order": 9, "address": "Passeig de la Mare de Déu del Coll 173, 08032 Barcelona", "barri": "Teixonera", "lat": 41.42363, "lon": 2.1506599}, {"id": "020", "order": 10, "address": "Carrer d'Elies Pagès 28, 08035 Barcelona", "barri": "Sant Genís dels Agudells", "lat": 41.4287, "lon": 2.1398}, {"id": "019", "order": 11, "address": "Carrer de Travau 39, 08031 Barcelona", "barri": "Turó de la Peira", "lat": 41.4285, "lon": 2.1652}];
+const KEY = "dante_barcelona_pro_v1";
+let state = (() => {
+  try { return JSON.parse(localStorage.getItem(KEY)) || {}; }
+  catch(e) { return {}; }
+})();
+
+const map = L.map("map", {zoomControl:true, scrollWheelZoom:false});
+
+// CARTO sirve las teselas desde su propia infraestructura, evitando el bloqueo
+// de los servidores voluntarios tile.openstreetmap.org.
+L.tileLayer(
+  "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+  {
+    subdomains:"abcd",
+    maxZoom:20,
+    attribution:"&copy; OpenStreetMap contributors &copy; CARTO"
+  }
+).addTo(map);
+
+const markers = {};
+
+function save() {
+  localStorage.setItem(KEY, JSON.stringify(state));
+}
+
+function mapsUrl(p) {
+  return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(p.address);
+}
+
+function fullRouteUrl() {
+  const origin = points[0].address;
+  const destination = points[points.length-1].address;
+  const waypoints = points.slice(1,-1).map(p => p.address).join("|");
+  return "https://www.google.com/maps/dir/?api=1"
+    + "&origin=" + encodeURIComponent(origin)
+    + "&destination=" + encodeURIComponent(destination)
+    + "&waypoints=" + encodeURIComponent(waypoints)
+    + "&travelmode=driving";
+}
+
+function icon(p) {
+  return L.divIcon({
+    className:"",
+    html:`<div class="num-icon ${state[p.id] ? "done" : ""}">${p.order}</div>`,
+    iconSize:[31,31],
+    iconAnchor:[15.5,15.5]
+  });
+}
+
+function initMap() {
+  const latlngs = points.map(p => [p.lat,p.lon]);
+
+  L.polyline(latlngs, {
+    color:"#2563eb",
+    weight:5,
+    opacity:.76,
+    lineJoin:"round"
+  }).addTo(map);
+
+  points.forEach(p => {
+    const m = L.marker([p.lat,p.lon], {icon:icon(p)}).addTo(map);
+    m.bindPopup(`
+      <div style="min-width:190px;font-family:system-ui">
+        <div style="font-size:16px;font-weight:900">${p.order} · ID ${p.id}</div>
+        <div style="font-size:12px;color:#64748b;margin:2px 0 7px">${p.barri}</div>
+        <div style="font-size:12px;line-height:1.35">${p.address}</div>
+        <a href="${mapsUrl(p)}" target="_blank" rel="noopener"
+           style="display:block;margin-top:10px;background:#2563eb;color:white;text-decoration:none;text-align:center;padding:9px;border-radius:10px;font-weight:800">
+          abrir en google maps
+        </a>
+      </div>`);
+    m.on("click", () => {
+      document.querySelector(`[data-id="${p.id}"]`)?.scrollIntoView({behavior:"smooth",block:"center"});
+    });
+    markers[p.id] = m;
+  });
+
+  map.fitBounds(L.latLngBounds(latlngs).pad(.10));
+}
+
+function render() {
+  const list = document.getElementById("list");
+  list.innerHTML = "";
+  let done = 0;
+
+  points.forEach(p => {
+    const isDone = !!state[p.id];
+    if (isDone) done++;
+
+    const el = document.createElement("section");
+    el.className = "card stop" + (isDone ? " done" : "");
+    el.dataset.id = p.id;
+    el.innerHTML = `
+      <div class="order">${p.order}</div>
+      <div>
+        <div class="stop-top">
+          <div>
+            <div class="stop-title">${p.barri}</div>
+            <div class="stop-id">ID ${p.id}</div>
+          </div>
+        </div>
+        <div class="address">${p.address}</div>
+        <div class="buttons">
+          <a class="btn maps" target="_blank" rel="noopener" href="${mapsUrl(p)}">Abrir en Google Maps</a>
+          <label class="check-wrap"><input type="checkbox" ${isDone ? "checked" : ""}> Hecho</label>
+        </div>
+      </div>`;
+
+    el.querySelector("input").addEventListener("change", ev => {
+      if (ev.target.checked) state[p.id] = true;
+      else delete state[p.id];
+      save();
+      markers[p.id]?.setIcon(icon(p));
+      render();
+    });
+
+    list.appendChild(el);
+  });
+
+  const pct = Math.round(done / points.length * 100);
+  document.getElementById("counter").textContent = `${done} completadas`;
+  document.getElementById("remaining").textContent = `${points.length-done} pendientes`;
+  document.getElementById("topPill").textContent = `${done} / ${points.length}`;
+  document.getElementById("fill").style.width = pct + "%";
+}
+
+document.getElementById("nextBtn").addEventListener("click", () => {
+  const p = points.find(x => !state[x.id]);
+  if (!p) {
+    alert("Todas las ubicaciones están marcadas como hechas.");
+    return;
+  }
+  window.open(mapsUrl(p), "_blank", "noopener");
+});
+
+document.getElementById("routeBtn").href = fullRouteUrl();
+
+initMap();
+render();
+</script>
+</body>
+</html>
