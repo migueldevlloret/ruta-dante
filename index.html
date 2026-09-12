@@ -98,7 +98,7 @@ h1{font-size:26px;line-height:1.05;margin:4px 0 5px;font-weight:900;letter-spaci
 }
 .user-arrow{
   position:absolute;left:12px;top:-12px;width:10px;height:22px;
-  transform-origin:50% 29px;transition:transform .12s linear;
+  transform-origin:50% 29px;transition:transform .22s ease-out;
   filter:drop-shadow(0 2px 4px rgba(15,23,42,.25))
 }
 .user-arrow:before{
@@ -185,7 +185,7 @@ h1{font-size:26px;line-height:1.05;margin:4px 0 5px;font-weight:900;letter-spaci
 </div>
 
 <div class="ios-permission" id="iosPermission">
-  <span>para mostrar hacia dónde miras, safari necesita un toque de permiso</span>
+  <span>para mostrar hacia dónde miras, el navegador necesita un toque de permiso</span>
   <button id="iosPermissionBtn" type="button">activar</button>
 </div>
 
@@ -484,20 +484,73 @@ function normalizeHeading(value) {
   return h;
 }
 
-function orientationHandler(event) {
-  let heading = null;
+// Suavizado angular: evita saltos 359° -> 0° y reduce el temblor del sensor.
+let smoothedHeading = null;
+let lastHeadingPaint = 0;
+const HEADING_SMOOTHING = 0.14;   // menor = más suave
+const HEADING_MIN_DELTA = 1.2;    // ignora microvariaciones
+const HEADING_UI_INTERVAL = 80;   // ms entre repintados
 
-  if (typeof event.webkitCompassHeading === "number") {
-    heading = event.webkitCompassHeading;
-  } else if (event.absolute === true && typeof event.alpha === "number") {
-    heading = 360 - event.alpha;
-  } else if (typeof event.alpha === "number") {
-    heading = 360 - event.alpha;
+function angleDelta(from, to) {
+  return ((to - from + 540) % 360) - 180;
+}
+
+function smoothHeading(raw) {
+  raw = normalizeHeading(raw);
+  if (raw === null) return null;
+
+  if (smoothedHeading === null) {
+    smoothedHeading = raw;
+    return smoothedHeading;
   }
 
-  heading = normalizeHeading(heading);
+  const delta = angleDelta(smoothedHeading, raw);
+
+  if (Math.abs(delta) < HEADING_MIN_DELTA) {
+    return smoothedHeading;
+  }
+
+  smoothedHeading = normalizeHeading(
+    smoothedHeading + delta * HEADING_SMOOTHING
+  );
+
+  return smoothedHeading;
+}
+
+function extractHeading(event) {
+  // iPhone/iPad cuando el navegador expone rumbo de brújula real.
+  if (typeof event.webkitCompassHeading === "number") {
+    return event.webkitCompassHeading;
+  }
+
+  // Android / navegadores con orientación absoluta.
+  if (event.absolute === true && typeof event.alpha === "number") {
+    return 360 - event.alpha;
+  }
+
+  // Fallback. Puede ser menos exacto pero sigue siendo útil.
+  if (typeof event.alpha === "number") {
+    return 360 - event.alpha;
+  }
+
+  return null;
+}
+
+function orientationHandler(event) {
+  const raw = extractHeading(event);
+  if (raw === null) return;
+
+  const heading = smoothHeading(raw);
   if (heading === null) return;
 
+  const now = performance.now();
+
+  // Evita repintar decenas de veces por segundo.
+  if (now - lastHeadingPaint < HEADING_UI_INTERVAL) {
+    return;
+  }
+
+  lastHeadingPaint = now;
   currentHeading = heading;
 
   document.getElementById("headingText").textContent =
@@ -508,18 +561,28 @@ function orientationHandler(event) {
   }
 }
 
-function attachOrientationListeners() {
-  window.addEventListener(
-    "deviceorientationabsolute",
-    orientationHandler,
-    true
-  );
+let orientationListenerAttached = false;
 
-  window.addEventListener(
-    "deviceorientation",
-    orientationHandler,
-    true
-  );
+function attachOrientationListeners() {
+  if (orientationListenerAttached) return;
+
+  orientationListenerAttached = true;
+
+  // IMPORTANTE:
+  // usamos SOLO un tipo de evento para evitar lecturas dobles/conflictivas.
+  if ("ondeviceorientationabsolute" in window) {
+    window.addEventListener(
+      "deviceorientationabsolute",
+      orientationHandler,
+      true
+    );
+  } else {
+    window.addEventListener(
+      "deviceorientation",
+      orientationHandler,
+      true
+    );
+  }
 
   document.getElementById("headingText").textContent =
     "brújula activa";
@@ -532,16 +595,15 @@ async function startOrientationAutomatically() {
     return;
   }
 
-  // Android y navegadores que no exigen interacción:
+  // Algunos navegadores (sobre todo iOS) exigen un gesto del usuario.
   if (typeof DeviceOrientationEvent.requestPermission !== "function") {
     attachOrientationListeners();
     return;
   }
 
-  // iPhone/iPad Safari obliga a que requestPermission() ocurra tras un gesto.
-  // No puede saltarse desde JavaScript, por lo que mostramos un único aviso.
   const aviso = document.getElementById("iosPermission");
   aviso.style.display = "flex";
+
   document.getElementById("headingText").textContent =
     "brújula pendiente de permiso";
 }
