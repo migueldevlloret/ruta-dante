@@ -115,6 +115,19 @@ h1{font-size:26px;line-height:1.05;margin:4px 0 5px;font-weight:900;letter-spaci
 }
 .gps-status strong{color:var(--ink)}
 
+
+.ios-permission{
+  display:none;
+  position:fixed;left:12px;right:12px;bottom:84px;z-index:1200;
+  max-width:560px;margin:auto;padding:12px 14px;border-radius:16px;
+  background:#111827;color:white;box-shadow:0 10px 30px rgba(15,23,42,.3);
+  font-size:13px;font-weight:750;align-items:center;justify-content:space-between;gap:12px
+}
+.ios-permission button{
+  border:0;border-radius:11px;background:white;color:#111827;
+  padding:9px 11px;font-weight:850;white-space:nowrap;cursor:pointer
+}
+
 </style>
 </head>
 <body>
@@ -148,10 +161,6 @@ h1{font-size:26px;line-height:1.05;margin:4px 0 5px;font-weight:900;letter-spaci
       <div class="map-note">Pulsa un número para ver la ubicación</div>
     </div>
     <div id="map">
-      <div class="gps-controls">
-        <button class="map-fab" id="followBtn" type="button" title="Centrar y seguir mi ubicación">◎</button>
-        <button class="map-fab" id="compassBtn" type="button" title="Activar orientación">➤</button>
-      </div>
     </div>
     <div class="gps-status">
       <span id="gpsText">ubicación desactivada</span>
@@ -173,6 +182,11 @@ h1{font-size:26px;line-height:1.05;margin:4px 0 5px;font-weight:900;letter-spaci
     <span>marca y desmarca manualmente</span>
   </div>
   <main id="list" class="list"></main>
+</div>
+
+<div class="ios-permission" id="iosPermission">
+  <span>para mostrar hacia dónde miras, safari necesita un toque de permiso</span>
+  <button id="iosPermissionBtn" type="button">activar</button>
 </div>
 
 <div class="bottom">
@@ -365,13 +379,13 @@ document.getElementById("routeBtn").href = fullRouteUrl();
 
 
 // ============================================================
-// UBICACIÓN EN TIEMPO REAL + ORIENTACIÓN DEL DISPOSITIVO
+// UBICACIÓN EN TIEMPO REAL + ORIENTACIÓN AUTOMÁTICA
 // ============================================================
 
 let watchId = null;
 let userMarker = null;
 let accuracyCircle = null;
-let followUser = false;
+let followUser = true;
 let currentHeading = null;
 
 function userIcon() {
@@ -398,7 +412,6 @@ function updateUserPosition(pos) {
       icon:userIcon(),
       zIndexOffset:1000
     }).addTo(map);
-
     userMarker.bindPopup("tu ubicación actual");
   } else {
     userMarker.setLatLng([lat,lon]);
@@ -436,48 +449,30 @@ function locationError(err) {
 
   document.getElementById("gpsText").textContent = msg;
   followUser = false;
-  document.getElementById("followBtn").classList.remove("active");
 }
 
-function startLocation() {
+function startLocationAutomatically() {
   if (!("geolocation" in navigator)) {
     document.getElementById("gpsText").textContent =
       "este navegador no admite geolocalización";
     return;
   }
 
-  if (watchId !== null) return;
-
   watchId = navigator.geolocation.watchPosition(
     updateUserPosition,
     locationError,
     {
       enableHighAccuracy:true,
-      maximumAge:2000,
+      maximumAge:1500,
       timeout:12000
     }
   );
 }
 
-document.getElementById("followBtn").addEventListener("click", () => {
-  startLocation();
-  followUser = !followUser;
-
-  const btn = document.getElementById("followBtn");
-  btn.classList.toggle("active", followUser);
-
-  if (followUser && userMarker) {
-    map.setView(userMarker.getLatLng(), 16, {animate:true});
-  }
-});
-
-// Si el usuario mueve el mapa manualmente, desactivamos el seguimiento.
-// La ubicación continúa actualizándose.
+// Si el usuario mueve el mapa manualmente, dejamos de recentrarlo.
+// El GPS sigue funcionando y el punto azul sigue actualizándose.
 map.on("dragstart zoomstart", () => {
-  if (followUser) {
-    followUser = false;
-    document.getElementById("followBtn").classList.remove("active");
-  }
+  followUser = false;
 });
 
 
@@ -492,86 +487,88 @@ function normalizeHeading(value) {
 function orientationHandler(event) {
   let heading = null;
 
-  // iPhone/Safari proporciona webkitCompassHeading cuando está disponible.
   if (typeof event.webkitCompassHeading === "number") {
     heading = event.webkitCompassHeading;
   } else if (event.absolute === true && typeof event.alpha === "number") {
     heading = 360 - event.alpha;
   } else if (typeof event.alpha === "number") {
-    // Fallback. Puede ser menos fiable en algunos Android.
     heading = 360 - event.alpha;
   }
 
   heading = normalizeHeading(heading);
-
   if (heading === null) return;
 
   currentHeading = heading;
+
   document.getElementById("headingText").textContent =
     `orientación ${Math.round(heading)}°`;
 
   if (userMarker) {
     userMarker.setIcon(userIcon());
   }
-
-  const btn = document.getElementById("compassBtn");
-  btn.style.transform = `rotate(${heading}deg)`;
 }
 
-async function enableCompass() {
-  try {
-    // iOS 13+ exige una interacción explícita para pedir este permiso.
-    if (
-      typeof DeviceOrientationEvent !== "undefined" &&
-      typeof DeviceOrientationEvent.requestPermission === "function"
-    ) {
-      const permission =
-        await DeviceOrientationEvent.requestPermission();
+function attachOrientationListeners() {
+  window.addEventListener(
+    "deviceorientationabsolute",
+    orientationHandler,
+    true
+  );
 
-      if (permission !== "granted") {
-        document.getElementById("headingText").textContent =
-          "permiso de brújula denegado";
-        return;
-      }
-    }
+  window.addEventListener(
+    "deviceorientation",
+    orientationHandler,
+    true
+  );
 
-    if (typeof DeviceOrientationEvent === "undefined") {
-      document.getElementById("headingText").textContent =
-        "brújula no disponible";
-      return;
-    }
+  document.getElementById("headingText").textContent =
+    "brújula activa";
+}
 
-    window.addEventListener(
-      "deviceorientationabsolute",
-      orientationHandler,
-      true
-    );
-
-    window.addEventListener(
-      "deviceorientation",
-      orientationHandler,
-      true
-    );
-
-    document.getElementById("compassBtn").classList.add("active");
+async function startOrientationAutomatically() {
+  if (typeof DeviceOrientationEvent === "undefined") {
     document.getElementById("headingText").textContent =
-      "brújula activa";
+      "brújula no disponible";
+    return;
+  }
 
+  // Android y navegadores que no exigen interacción:
+  if (typeof DeviceOrientationEvent.requestPermission !== "function") {
+    attachOrientationListeners();
+    return;
+  }
+
+  // iPhone/iPad Safari obliga a que requestPermission() ocurra tras un gesto.
+  // No puede saltarse desde JavaScript, por lo que mostramos un único aviso.
+  const aviso = document.getElementById("iosPermission");
+  aviso.style.display = "flex";
+  document.getElementById("headingText").textContent =
+    "brújula pendiente de permiso";
+}
+
+document.getElementById("iosPermissionBtn").addEventListener("click", async () => {
+  try {
+    const permission = await DeviceOrientationEvent.requestPermission();
+
+    if (permission === "granted") {
+      attachOrientationListeners();
+      document.getElementById("iosPermission").style.display = "none";
+    } else {
+      document.getElementById("headingText").textContent =
+        "permiso de brújula denegado";
+      document.getElementById("iosPermission").style.display = "none";
+    }
   } catch (err) {
     console.warn("No se pudo activar la orientación:", err);
     document.getElementById("headingText").textContent =
       "no se pudo activar la brújula";
   }
-}
+});
 
-document.getElementById("compassBtn").addEventListener(
-  "click",
-  enableCompass
-);
-
-
-// Activamos GPS al pulsar el botón por primera vez;
-// no pedimos permisos nada más cargar la página.
+// Se solicita el GPS nada más entrar.
+// El navegador puede mostrar su diálogo nativo de permiso.
+startLocationAutomatically();
+startOrientationAutomatically();
 
 initMap();
 render();
