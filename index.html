@@ -74,6 +74,47 @@ h1{font-size:26px;line-height:1.05;margin:4px 0 5px;font-weight:900;letter-spaci
   .buttons{grid-template-columns:1fr}
   .check-wrap{min-height:43px}
 }
+
+.gps-controls{
+  position:absolute;right:12px;bottom:12px;z-index:800;
+  display:flex;flex-direction:column;gap:8px
+}
+.map-fab{
+  width:46px;height:46px;border:1px solid rgba(15,23,42,.12);border-radius:14px;
+  background:rgba(255,255,255,.96);box-shadow:0 6px 18px rgba(15,23,42,.18);
+  display:flex;align-items:center;justify-content:center;cursor:pointer;
+  font-size:20px;font-weight:900;color:#111827;backdrop-filter:blur(8px)
+}
+.map-fab.active{background:#111827;color:#fff}
+.map-fab:active{transform:scale(.97)}
+#map{position:relative}
+.user-marker-wrap{
+  width:34px;height:34px;position:relative
+}
+.user-dot{
+  width:18px;height:18px;border-radius:50%;background:#2563eb;border:4px solid white;
+  box-shadow:0 0 0 6px rgba(37,99,235,.16),0 3px 10px rgba(15,23,42,.25);
+  position:absolute;left:8px;top:8px;z-index:2
+}
+.user-arrow{
+  position:absolute;left:12px;top:-12px;width:10px;height:22px;
+  transform-origin:50% 29px;transition:transform .12s linear;
+  filter:drop-shadow(0 2px 4px rgba(15,23,42,.25))
+}
+.user-arrow:before{
+  content:"";position:absolute;left:0;top:0;width:0;height:0;
+  border-left:5px solid transparent;border-right:5px solid transparent;
+  border-bottom:18px solid #2563eb
+}
+.accuracy-ring{
+  stroke:#2563eb;stroke-opacity:.25;fill:#2563eb;fill-opacity:.07
+}
+.gps-status{
+  padding:10px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);
+  display:flex;justify-content:space-between;gap:8px;align-items:center
+}
+.gps-status strong{color:var(--ink)}
+
 </style>
 </head>
 <body>
@@ -106,7 +147,16 @@ h1{font-size:26px;line-height:1.05;margin:4px 0 5px;font-weight:900;letter-spaci
       </div>
       <div class="map-note">Pulsa un número para ver la ubicación</div>
     </div>
-    <div id="map"></div>
+    <div id="map">
+      <div class="gps-controls">
+        <button class="map-fab" id="followBtn" type="button" title="Centrar y seguir mi ubicación">◎</button>
+        <button class="map-fab" id="compassBtn" type="button" title="Activar orientación">➤</button>
+      </div>
+    </div>
+    <div class="gps-status">
+      <span id="gpsText">ubicación desactivada</span>
+      <strong id="headingText">brújula desactivada</strong>
+    </div>
     <div class="route-summary">
       <span class="chip">1 Marina de Port</span>
       <span class="chip">2 Sant Antoni</span>
@@ -312,6 +362,216 @@ document.getElementById("nextBtn").addEventListener("click", () => {
 });
 
 document.getElementById("routeBtn").href = fullRouteUrl();
+
+
+// ============================================================
+// UBICACIÓN EN TIEMPO REAL + ORIENTACIÓN DEL DISPOSITIVO
+// ============================================================
+
+let watchId = null;
+let userMarker = null;
+let accuracyCircle = null;
+let followUser = false;
+let currentHeading = null;
+
+function userIcon() {
+  const heading = Number.isFinite(currentHeading) ? currentHeading : 0;
+  return L.divIcon({
+    className:"",
+    html:`
+      <div class="user-marker-wrap">
+        <div class="user-arrow" style="transform:rotate(${heading}deg)"></div>
+        <div class="user-dot"></div>
+      </div>`,
+    iconSize:[34,34],
+    iconAnchor:[17,17]
+  });
+}
+
+function updateUserPosition(pos) {
+  const lat = pos.coords.latitude;
+  const lon = pos.coords.longitude;
+  const acc = pos.coords.accuracy || 0;
+
+  if (!userMarker) {
+    userMarker = L.marker([lat,lon], {
+      icon:userIcon(),
+      zIndexOffset:1000
+    }).addTo(map);
+
+    userMarker.bindPopup("tu ubicación actual");
+  } else {
+    userMarker.setLatLng([lat,lon]);
+    userMarker.setIcon(userIcon());
+  }
+
+  if (!accuracyCircle) {
+    accuracyCircle = L.circle([lat,lon], {
+      radius:acc,
+      color:"#2563eb",
+      weight:1,
+      opacity:.18,
+      fillColor:"#2563eb",
+      fillOpacity:.06
+    }).addTo(map);
+  } else {
+    accuracyCircle.setLatLng([lat,lon]);
+    accuracyCircle.setRadius(acc);
+  }
+
+  document.getElementById("gpsText").textContent =
+    `ubicación activa · precisión ±${Math.round(acc)} m`;
+
+  if (followUser) {
+    map.setView([lat,lon], Math.max(map.getZoom(), 16), {animate:true});
+  }
+}
+
+function locationError(err) {
+  const msg = {
+    1:"permiso de ubicación denegado",
+    2:"ubicación no disponible",
+    3:"tiempo de espera agotado"
+  }[err.code] || "error de ubicación";
+
+  document.getElementById("gpsText").textContent = msg;
+  followUser = false;
+  document.getElementById("followBtn").classList.remove("active");
+}
+
+function startLocation() {
+  if (!("geolocation" in navigator)) {
+    document.getElementById("gpsText").textContent =
+      "este navegador no admite geolocalización";
+    return;
+  }
+
+  if (watchId !== null) return;
+
+  watchId = navigator.geolocation.watchPosition(
+    updateUserPosition,
+    locationError,
+    {
+      enableHighAccuracy:true,
+      maximumAge:2000,
+      timeout:12000
+    }
+  );
+}
+
+document.getElementById("followBtn").addEventListener("click", () => {
+  startLocation();
+  followUser = !followUser;
+
+  const btn = document.getElementById("followBtn");
+  btn.classList.toggle("active", followUser);
+
+  if (followUser && userMarker) {
+    map.setView(userMarker.getLatLng(), 16, {animate:true});
+  }
+});
+
+// Si el usuario mueve el mapa manualmente, desactivamos el seguimiento.
+// La ubicación continúa actualizándose.
+map.on("dragstart zoomstart", () => {
+  if (followUser) {
+    followUser = false;
+    document.getElementById("followBtn").classList.remove("active");
+  }
+});
+
+
+function normalizeHeading(value) {
+  let h = Number(value);
+  if (!Number.isFinite(h)) return null;
+  h = h % 360;
+  if (h < 0) h += 360;
+  return h;
+}
+
+function orientationHandler(event) {
+  let heading = null;
+
+  // iPhone/Safari proporciona webkitCompassHeading cuando está disponible.
+  if (typeof event.webkitCompassHeading === "number") {
+    heading = event.webkitCompassHeading;
+  } else if (event.absolute === true && typeof event.alpha === "number") {
+    heading = 360 - event.alpha;
+  } else if (typeof event.alpha === "number") {
+    // Fallback. Puede ser menos fiable en algunos Android.
+    heading = 360 - event.alpha;
+  }
+
+  heading = normalizeHeading(heading);
+
+  if (heading === null) return;
+
+  currentHeading = heading;
+  document.getElementById("headingText").textContent =
+    `orientación ${Math.round(heading)}°`;
+
+  if (userMarker) {
+    userMarker.setIcon(userIcon());
+  }
+
+  const btn = document.getElementById("compassBtn");
+  btn.style.transform = `rotate(${heading}deg)`;
+}
+
+async function enableCompass() {
+  try {
+    // iOS 13+ exige una interacción explícita para pedir este permiso.
+    if (
+      typeof DeviceOrientationEvent !== "undefined" &&
+      typeof DeviceOrientationEvent.requestPermission === "function"
+    ) {
+      const permission =
+        await DeviceOrientationEvent.requestPermission();
+
+      if (permission !== "granted") {
+        document.getElementById("headingText").textContent =
+          "permiso de brújula denegado";
+        return;
+      }
+    }
+
+    if (typeof DeviceOrientationEvent === "undefined") {
+      document.getElementById("headingText").textContent =
+        "brújula no disponible";
+      return;
+    }
+
+    window.addEventListener(
+      "deviceorientationabsolute",
+      orientationHandler,
+      true
+    );
+
+    window.addEventListener(
+      "deviceorientation",
+      orientationHandler,
+      true
+    );
+
+    document.getElementById("compassBtn").classList.add("active");
+    document.getElementById("headingText").textContent =
+      "brújula activa";
+
+  } catch (err) {
+    console.warn("No se pudo activar la orientación:", err);
+    document.getElementById("headingText").textContent =
+      "no se pudo activar la brújula";
+  }
+}
+
+document.getElementById("compassBtn").addEventListener(
+  "click",
+  enableCompass
+);
+
+
+// Activamos GPS al pulsar el botón por primera vez;
+// no pedimos permisos nada más cargar la página.
 
 initMap();
 render();
