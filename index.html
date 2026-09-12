@@ -143,14 +143,12 @@ let state = (() => {
 
 const map = L.map("map", {zoomControl:true, scrollWheelZoom:false});
 
-// CARTO sirve las teselas desde su propia infraestructura, evitando el bloqueo
-// de los servidores voluntarios tile.openstreetmap.org.
+// Mapa base sin API key. Evita la marca "API KEY REQUIRED" de CARTO.
 L.tileLayer(
-  "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+  "https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",
   {
-    subdomains:"abcd",
-    maxZoom:20,
-    attribution:"&copy; OpenStreetMap contributors &copy; CARTO"
+    maxZoom:19,
+    attribution:"Tiles &copy; Esri"
   }
 ).addTo(map);
 
@@ -184,16 +182,10 @@ function icon(p) {
   });
 }
 
-function initMap() {
+async function initMap() {
   const latlngs = points.map(p => [p.lat,p.lon]);
 
-  L.polyline(latlngs, {
-    color:"#2563eb",
-    weight:5,
-    opacity:.76,
-    lineJoin:"round"
-  }).addTo(map);
-
+  // Marcadores: siempre cargan, sin geocodificación en tiempo real.
   points.forEach(p => {
     const m = L.marker([p.lat,p.lon], {icon:icon(p)}).addTo(map);
     m.bindPopup(`
@@ -213,6 +205,55 @@ function initMap() {
   });
 
   map.fitBounds(L.latLngBounds(latlngs).pad(.10));
+
+  // Ruta de respaldo en línea recta: aparece inmediatamente.
+  let routeLayer = L.polyline(latlngs, {
+    color:"#2563eb",
+    weight:4,
+    opacity:.45,
+    dashArray:"8 8",
+    lineJoin:"round"
+  }).addTo(map);
+
+  // Intentamos sustituirla por la ruta real de calles.
+  // El servicio de demostración de OSRM no requiere API key.
+  try {
+    const coords = points.map(p => `${p.lon},${p.lat}`).join(";");
+    const url =
+      "https://router.project-osrm.org/route/v1/driving/" +
+      coords +
+      "?overview=full&geometries=geojson&steps=false";
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      throw new Error("OSRM " + response.status);
+    }
+
+    const data = await response.json();
+
+    if (!data.routes || !data.routes.length) {
+      throw new Error("Sin ruta");
+    }
+
+    const roadLatLngs =
+      data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
+
+    map.removeLayer(routeLayer);
+
+    routeLayer = L.polyline(roadLatLngs, {
+      color:"#2563eb",
+      weight:5,
+      opacity:.82,
+      lineJoin:"round"
+    }).addTo(map);
+
+    map.fitBounds(routeLayer.getBounds().pad(.07));
+
+  } catch (error) {
+    // Si OSRM falla, se mantiene la línea de respaldo.
+    console.warn("No se pudo cargar la ruta por carretera:", error);
+  }
 }
 
 function render() {
