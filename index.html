@@ -136,9 +136,9 @@ h1{font-size:26px;line-height:1.05;margin:4px 0 5px;font-weight:900;letter-spaci
     <div>
       <div class="eyebrow">Ruta de trabajo</div>
       <h1>Dante · Barcelona</h1>
-      <div class="subtitle"><span class="statusdot"></span>11 ubicaciones · progreso manual</div>
+      <div class="subtitle"><span class="statusdot"></span>27 ubicaciones · progreso manual</div>
     </div>
-    <div class="pill" id="topPill">0 / 11</div>
+    <div class="pill" id="topPill">0 / 27</div>
   </header>
 
   <section class="card progress">
@@ -147,7 +147,7 @@ h1{font-size:26px;line-height:1.05;margin:4px 0 5px;font-weight:900;letter-spaci
         <div class="muted">Progreso de la ruta</div>
         <div class="big" id="counter">0 completadas</div>
       </div>
-      <div class="muted" id="remaining">11 pendientes</div>
+      <div class="muted" id="remaining">27 pendientes</div>
     </div>
     <div class="track"><div class="fill" id="fill"></div></div>
   </section>
@@ -166,14 +166,19 @@ h1{font-size:26px;line-height:1.05;margin:4px 0 5px;font-weight:900;letter-spaci
       <span id="gpsText">ubicación desactivada</span>
       <strong id="headingText">brújula desactivada</strong>
     </div>
+    <div class="gps-status"><span id="mapLoading">cargando puntos del mapa…</span><strong id="routeInfo"></strong></div>
     <div class="route-summary">
       <span class="chip">1 Marina de Port</span>
       <span class="chip">2 Sant Antoni</span>
       <span class="chip">3–7 Raval</span>
       <span class="chip">8 Gràcia</span>
-      <span class="chip">9 Teixonera</span>
-      <span class="chip">10 Sant Genís</span>
-      <span class="chip">11 Turó de la Peira</span>
+      <span class="chip">9–11 Horta / Nou Barris</span>
+      <span class="chip">12 Sagrera</span>
+      <span class="chip">13–17 Porta / Prosperitat</span>
+      <span class="chip">18 Sant Andreu</span>
+      <span class="chip">19 Bon Pastor</span>
+      <span class="chip">20–23 Santa Coloma</span>
+      <span class="chip">24–27 Trinitat / Ciutat Meridiana</span>
     </div>
   </section>
 
@@ -192,13 +197,13 @@ h1{font-size:26px;line-height:1.05;margin:4px 0 5px;font-weight:900;letter-spaci
 <div class="bottom">
   <div class="bottom-inner">
     <button class="btn next" id="nextBtn">Ir al siguiente</button>
-    <a class="btn fullroute" id="routeBtn" target="_blank" rel="noopener">Ruta en Google Maps</a>
+    <a class="btn fullroute" id="routeBtn" target="_blank" rel="noopener">Siguiente tramo en Maps</a>
   </div>
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-const points = [{"id": "017", "order": 1, "address": "Carrer dels Ferrocarrils Catalans 91, 08038 Barcelona", "barri": "Marina de Port", "lat": 41.3608, "lon": 2.1445}, {"id": "013", "order": 2, "address": "Carrer de Viladomat 109, 08015 Barcelona", "barri": "Sant Antoni", "lat": 41.3787, "lon": 2.1559}, {"id": "016", "order": 3, "address": "Carrer de la Cera 33, 08001 Barcelona", "barri": "Raval", "lat": 41.37864, "lon": 2.16592}, {"id": "010", "order": 4, "address": "Carrer de la Cera 15, 08001 Barcelona", "barri": "Raval", "lat": 41.3783, "lon": 2.1666}, {"id": "011", "order": 5, "address": "Carrer d'en Robador 8, 08001 Barcelona", "barri": "Raval", "lat": 41.3783, "lon": 2.1697}, {"id": "008", "order": 6, "address": "Carrer de Joaquín Costa 18, 08001 Barcelona", "barri": "Raval", "lat": 41.38176, "lon": 2.16671}, {"id": "015", "order": 7, "address": "Carrer de Valldonzella 50, 08001 Barcelona", "barri": "Raval", "lat": 41.384, "lon": 2.1654}, {"id": "012", "order": 8, "address": "Carrer de Ramón y Cajal 156, 08024 Barcelona", "barri": "Vila de Gràcia", "lat": 41.4057, "lon": 2.1614}, {"id": "007", "order": 9, "address": "Passeig de la Mare de Déu del Coll 173, 08032 Barcelona", "barri": "Teixonera", "lat": 41.42363, "lon": 2.1506599}, {"id": "020", "order": 10, "address": "Carrer d'Elies Pagès 28, 08035 Barcelona", "barri": "Sant Genís dels Agudells", "lat": 41.4287, "lon": 2.1398}, {"id": "019", "order": 11, "address": "Carrer de Travau 39, 08031 Barcelona", "barri": "Turó de la Peira", "lat": 41.4285, "lon": 2.1652}];
+const points = [{"id": "017", "order": 1, "address": "Carrer dels Ferrocarrils Catalans 91, 08038 Barcelona", "barri": "Marina de Port", "lat": 41.3608, "lon": 2.1445}, {"id": "013", "order": 2, "address": "Carrer de Viladomat 109, 08015 Barcelona", "barri": "Sant Antoni", "lat": 41.3787, "lon": 2.1559}, {"id": "016", "order": 3, "address": "Carrer de la Cera 33, 08001 Barcelona", "barri": "Raval", "lat": 41.37864, "lon": 2.16592}, {"id": "010", "order": 4, "address": "Carrer de la Cera 15, 08001 Barcelona", "barri": "Raval", "lat": 41.3783, "lon": 2.1666}, {"id": "011", "order": 5, "address": "Carrer d'en Robador 8, 08001 Barcelona", "barri": "Raval", "lat": 41.3783, "lon": 2.1697}, {"id": "008", "order": 6, "address": "Carrer de Joaquín Costa 18, 08001 Barcelona", "barri": "Raval", "lat": 41.38176, "lon": 2.16671}, {"id": "015", "order": 7, "address": "Carrer de Valldonzella 50, 08001 Barcelona", "barri": "Raval", "lat": 41.384, "lon": 2.1654}, {"id": "012", "order": 8, "address": "Carrer de Ramón y Cajal 156, 08024 Barcelona", "barri": "Vila de Gràcia", "lat": 41.4057, "lon": 2.1614}, {"id": "007", "order": 9, "address": "Passeig de la Mare de Déu del Coll 173, 08032 Barcelona", "barri": "Teixonera", "lat": 41.42363, "lon": 2.1506599}, {"id": "020", "order": 10, "address": "Carrer d'Elies Pagès 28, 08035 Barcelona", "barri": "Sant Genís dels Agudells", "lat": 41.4287, "lon": 2.1398}, {"id": "019", "order": 11, "address": "Carrer de Travau 39, 08031 Barcelona", "barri": "Turó de la Peira", "lat": 41.4285, "lon": 2.1652}, {"id": "024", "address": "Carrer de Portugal 23, 08027 Barcelona", "barri": "Sagrera", "order": 12}, {"id": "026", "address": "Carrer Jota 29, 08016 Barcelona", "barri": "Vilapicina i la Torre Llobeta", "order": 13}, {"id": "004", "address": "Passeig Ciutat de Mallorca 25, 08016 Barcelona", "barri": "Porta", "order": 14}, {"id": "014", "address": "Plaça de Portocristo 2, 08016 Barcelona", "barri": "Porta", "order": 15}, {"id": "022", "address": "Carrer de la Selva 40, 08020 Barcelona", "barri": "Porta", "order": 16}, {"id": "021", "address": "Carrer Enric Casanovas 2, 08016 Barcelona", "barri": "Prosperitat", "order": 17}, {"id": "025", "address": "Carrer Baliarda 4, 08030 Barcelona", "barri": "Sant Andreu de Palomar", "order": 18}, {"id": "005", "address": "Carrer Estadella 95, 08030 Barcelona", "barri": "Bon Pastor", "order": 19}, {"id": "068", "address": "Carrer de Roma 52, 08921 Santa Coloma de Gramenet", "barri": "Llatí", "order": 20}, {"id": "069", "address": "Carrer de Roma 76, 08921 Santa Coloma de Gramenet", "barri": "Llatí", "order": 21}, {"id": "067", "address": "Carrer d'Aragó 14, 08924 Santa Coloma de Gramenet", "barri": "Singuerlín", "order": 22}, {"id": "066", "address": "Carrer del Baró 27, 08921 Santa Coloma de Gramenet", "barri": "Riu Nord", "order": 23}, {"id": "027", "address": "Avinguda Meridiana 625, 08033 Barcelona", "barri": "Trinitat Nova", "order": 24}, {"id": "018", "address": "Carrer Torrent de Perera 24, 08033 Barcelona", "barri": "Trinitat Vella", "order": 25}, {"id": "023", "address": "Avinguda Rasos de Peguera 15, 08033 Barcelona", "barri": "Ciutat Meridiana", "order": 26}, {"id": "028", "address": "Carrer Pedraforca 8, 08033 Barcelona", "barri": "Ciutat Meridiana", "order": 27}];
 const KEY = "dante_barcelona_pro_v1";
 let state = (() => {
   try { return JSON.parse(localStorage.getItem(KEY)) || {}; }
@@ -227,9 +232,16 @@ function mapsUrl(p) {
 }
 
 function fullRouteUrl() {
-  const origin = points[0].address;
-  const destination = points[points.length-1].address;
-  const waypoints = points.slice(1,-1).map(p => p.address).join("|");
+  const pending = points.filter(p => !state[p.id]);
+  const base = pending.length ? pending : points;
+
+  // Google Maps URL funciona de forma más fiable con un tramo corto.
+  // Abrimos el siguiente tramo de hasta 10 paradas.
+  const segment = base.slice(0, 10);
+  const origin = segment[0].address;
+  const destination = segment[segment.length - 1].address;
+  const waypoints = segment.slice(1,-1).map(p => p.address).join("|");
+
   return "https://www.google.com/maps/dir/?api=1"
     + "&origin=" + encodeURIComponent(origin)
     + "&destination=" + encodeURIComponent(destination)
@@ -246,77 +258,147 @@ function icon(p) {
   });
 }
 
+async function geocodePoint(p) {
+  if (Number.isFinite(p.lat) && Number.isFinite(p.lon)) return p;
+
+  const cacheKey = "dante_geo_" + p.id + "_" + p.address;
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey));
+    if (cached && Number.isFinite(cached.lat) && Number.isFinite(cached.lon)) {
+      p.lat = cached.lat;
+      p.lon = cached.lon;
+      return p;
+    }
+  } catch(e) {}
+
+  const url =
+    "https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates"
+    + "?f=json&maxLocations=1&outFields=Match_addr&singleLine="
+    + encodeURIComponent(p.address);
+
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("Geocoder " + response.status);
+
+  const data = await response.json();
+  if (!data.candidates || !data.candidates.length) {
+    throw new Error("Dirección no localizada");
+  }
+
+  p.lat = data.candidates[0].location.y;
+  p.lon = data.candidates[0].location.x;
+  localStorage.setItem(cacheKey, JSON.stringify({lat:p.lat, lon:p.lon}));
+  return p;
+}
+
+async function routeChunk(chunk) {
+  const coords = chunk.map(p => `${p.lon},${p.lat}`).join(";");
+  const url =
+    "https://router.project-osrm.org/route/v1/driving/"
+    + coords
+    + "?overview=full&geometries=geojson&steps=false";
+  const response = await fetch(url);
+  if (!response.ok) throw new Error("OSRM " + response.status);
+  const data = await response.json();
+  if (!data.routes || !data.routes.length) throw new Error("Sin ruta");
+  return data.routes[0];
+}
+
 async function initMap() {
-  const latlngs = points.map(p => [p.lat,p.lon]);
+  const mapLoading = document.getElementById("mapLoading");
+  const routeInfo = document.getElementById("routeInfo");
+  const valid = [];
 
-  // Marcadores: siempre cargan, sin geocodificación en tiempo real.
-  points.forEach(p => {
-    const m = L.marker([p.lat,p.lon], {icon:icon(p)}).addTo(map);
-    m.bindPopup(`
-      <div style="min-width:190px;font-family:system-ui">
-        <div style="font-size:16px;font-weight:900">${p.order} · ID ${p.id}</div>
-        <div style="font-size:12px;color:#64748b;margin:2px 0 7px">${p.barri}</div>
-        <div style="font-size:12px;line-height:1.35">${p.address}</div>
-        <a href="${mapsUrl(p)}" target="_blank" rel="noopener"
-           style="display:block;margin-top:10px;background:#2563eb;color:white;text-decoration:none;text-align:center;padding:9px;border-radius:10px;font-weight:800">
-          abrir en google maps
-        </a>
-      </div>`);
-    m.on("click", () => {
-      document.querySelector(`[data-id="${p.id}"]`)?.scrollIntoView({behavior:"smooth",block:"center"});
-    });
-    markers[p.id] = m;
-  });
+  for (let i = 0; i < points.length; i++) {
+    const p = points[i];
+    mapLoading.textContent = `cargando ${i + 1}/${points.length}…`;
 
-  map.fitBounds(L.latLngBounds(latlngs).pad(.10));
+    try {
+      await geocodePoint(p);
+      valid.push(p);
 
-  // Ruta de respaldo en línea recta: aparece inmediatamente.
+      const m = L.marker([p.lat,p.lon], {icon:icon(p)}).addTo(map);
+      m.bindPopup(`
+        <div style="min-width:190px;font-family:system-ui">
+          <div style="font-size:16px;font-weight:900">${p.order} · ID ${p.id}</div>
+          <div style="font-size:12px;color:#64748b;margin:2px 0 7px">${p.barri}</div>
+          <div style="font-size:12px;line-height:1.35">${p.address}</div>
+          <a href="${mapsUrl(p)}" target="_blank" rel="noopener"
+             style="display:block;margin-top:10px;background:#2563eb;color:white;text-decoration:none;text-align:center;padding:9px;border-radius:10px;font-weight:800">
+            abrir en google maps
+          </a>
+        </div>`);
+
+      m.on("click", () => {
+        document.querySelector(`[data-id="${p.id}"]`)?.scrollIntoView({behavior:"smooth",block:"center"});
+      });
+
+      markers[p.id] = m;
+
+    } catch (error) {
+      console.warn("No se pudo cargar", p.id, p.address, error);
+    }
+  }
+
+  if (!valid.length) {
+    mapLoading.textContent = "no se han podido cargar los puntos";
+    return;
+  }
+
+  const latlngs = valid.map(p => [p.lat,p.lon]);
+
+  // respaldo instantáneo
   let routeLayer = L.polyline(latlngs, {
     color:"#2563eb",
     weight:4,
-    opacity:.45,
+    opacity:.35,
     dashArray:"8 8",
     lineJoin:"round"
   }).addTo(map);
 
-  // Intentamos sustituirla por la ruta real de calles.
-  // El servicio de demostración de OSRM no requiere API key.
-  try {
-    const coords = points.map(p => `${p.lon},${p.lat}`).join(";");
-    const url =
-      "https://router.project-osrm.org/route/v1/driving/" +
-      coords +
-      "?overview=full&geometries=geojson&steps=false";
+  map.fitBounds(L.latLngBounds(latlngs).pad(.08));
+  mapLoading.textContent = `${valid.length}/${points.length} puntos cargados`;
 
-    const response = await fetch(url);
+  // OSRM suele admitir muchos puntos, pero dividimos en tramos para que sea más robusto.
+  if (valid.length === points.length) {
+    try {
+      const chunks = [];
+      const maxPerChunk = 10;
+      for (let i = 0; i < valid.length - 1; i += (maxPerChunk - 1)) {
+        const chunk = valid.slice(i, Math.min(i + maxPerChunk, valid.length));
+        if (chunk.length >= 2) chunks.push(chunk);
+      }
 
-    if (!response.ok) {
-      throw new Error("OSRM " + response.status);
+      let allRoadLatLngs = [];
+      let totalDistance = 0;
+      let totalDuration = 0;
+
+      for (let i = 0; i < chunks.length; i++) {
+        mapLoading.textContent = `calculando ruta ${i + 1}/${chunks.length}…`;
+        const r = await routeChunk(chunks[i]);
+        totalDistance += r.distance;
+        totalDuration += r.duration;
+        const ll = r.geometry.coordinates.map(c => [c[1], c[0]]);
+        if (allRoadLatLngs.length && ll.length) ll.shift();
+        allRoadLatLngs.push(...ll);
+      }
+
+      map.removeLayer(routeLayer);
+      routeLayer = L.polyline(allRoadLatLngs, {
+        color:"#2563eb",
+        weight:5,
+        opacity:.82,
+        lineJoin:"round"
+      }).addTo(map);
+
+      map.fitBounds(routeLayer.getBounds().pad(.06));
+      mapLoading.textContent = "ruta completa cargada";
+      routeInfo.textContent =
+        `${(totalDistance/1000).toFixed(1)} km · ~${Math.round(totalDuration/60)} min conducción`;
+
+    } catch (error) {
+      console.warn("No se pudo cargar la ruta por carretera:", error);
+      mapLoading.textContent = "puntos cargados · ruta de respaldo";
     }
-
-    const data = await response.json();
-
-    if (!data.routes || !data.routes.length) {
-      throw new Error("Sin ruta");
-    }
-
-    const roadLatLngs =
-      data.routes[0].geometry.coordinates.map(c => [c[1], c[0]]);
-
-    map.removeLayer(routeLayer);
-
-    routeLayer = L.polyline(roadLatLngs, {
-      color:"#2563eb",
-      weight:5,
-      opacity:.82,
-      lineJoin:"round"
-    }).addTo(map);
-
-    map.fitBounds(routeLayer.getBounds().pad(.07));
-
-  } catch (error) {
-    // Si OSRM falla, se mantiene la línea de respaldo.
-    console.warn("No se pudo cargar la ruta por carretera:", error);
   }
 }
 
@@ -354,6 +436,19 @@ function render() {
       save();
       markers[p.id]?.setIcon(icon(p));
       render();
+    });
+
+    el.addEventListener("click", ev => {
+      if (ev.target.closest("a,button,input,label")) return;
+      const marker = markers[p.id];
+      if (marker) {
+        map.setView(marker.getLatLng(), 18, {animate:true});
+        marker.openPopup();
+        setTimeout(() => document.getElementById("map").scrollIntoView({behavior:"smooth",block:"center"}), 80);
+      } else {
+        document.getElementById("mapLoading").textContent =
+          "este punto todavía se está cargando en el mapa…";
+      }
     });
 
     list.appendChild(el);
