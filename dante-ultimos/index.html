@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0d10">
+<title>Dante · Restantes</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{--bg:#f3f4f6;--card:#fff;--ink:#0f172a;--muted:#64748b;--line:#e5e7eb;--dark:#0b0d10;--blue:#2563eb;--green:#15803d}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+.app{max-width:900px;margin:auto;padding:14px 14px 110px}.topbar{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin:4px 0 12px}
+.eyebrow{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:25px;line-height:1.07;margin:4px 0 5px;font-weight:900;letter-spacing:-.03em}.subtitle{font-size:14px;color:var(--muted)}
+.pill{background:var(--dark);color:#fff;padding:8px 10px;border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 6px 24px rgba(15,23,42,.05)}
+.progress{padding:16px;margin-bottom:12px}.progress-head{display:flex;justify-content:space-between;gap:12px;align-items:end}.big{font-size:25px;font-weight:900;letter-spacing:-.03em}.muted{color:var(--muted);font-size:13px}
+.track{height:9px;background:#e5e7eb;border-radius:999px;overflow:hidden;margin-top:12px}.fill{height:100%;width:0;background:linear-gradient(90deg,#111827,#374151);border-radius:999px;transition:.2s}
+.map-card{overflow:hidden;margin-bottom:14px}.map-head{padding:14px 15px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid var(--line)}
+.map-head strong{font-size:15px}.map-note{font-size:11px;color:var(--muted);text-align:right}#map{height:420px;background:#e8edf2;position:relative}.leaflet-control-attribution{font-size:9px!important}
+.num-icon{width:31px;height:31px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--dark);color:#fff;border:3px solid white;font-size:12px;font-weight:900;box-shadow:0 3px 10px rgba(0,0,0,.25)}
+.num-icon.done{background:var(--green)}
+.group-icon{
+  min-width:42px;height:31px;padding:0 7px;border-radius:16px;display:flex;align-items:center;justify-content:center;
+  background:#7c3aed;color:#fff;border:3px solid white;font-size:11px;font-weight:900;
+  box-shadow:0 3px 10px rgba(0,0,0,.25);white-space:nowrap
+}.gps-status{padding:10px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:8px;align-items:center}.gps-status strong{color:var(--ink)}
+.user-marker-wrap{width:34px;height:34px;position:relative}.user-dot{width:18px;height:18px;border-radius:50%;background:#2563eb;border:4px solid white;box-shadow:0 0 0 6px rgba(37,99,235,.16),0 3px 10px rgba(15,23,42,.25);position:absolute;left:8px;top:8px;z-index:2}
+.user-arrow{position:absolute;left:12px;top:-12px;width:10px;height:22px;transform-origin:50% 29px;transition:transform .22s ease-out;filter:drop-shadow(0 2px 4px rgba(15,23,42,.25))}
+.user-arrow:before{content:"";position:absolute;left:0;top:0;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:18px solid #2563eb}
+.section-title{display:flex;justify-content:space-between;align-items:center;margin:18px 2px 9px}.section-title h2{margin:0;font-size:17px;font-weight:900;letter-spacing:-.02em}.section-title span{font-size:12px;color:var(--muted)}
+.list{display:flex;flex-direction:column;gap:9px}.stop{padding:13px;display:grid;cursor:pointer;grid-template-columns:46px minmax(0,1fr);gap:11px;transition:.15s}.stop.done{opacity:.58}.stop:active{transform:scale(.995)}
+.order{height:46px;width:46px;border-radius:14px;background:var(--dark);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900}.stop.done .order{background:var(--green)}
+.stop-title{font-size:15px;font-weight:900;line-height:1.15}.stop-id{color:var(--muted);font-size:11px;font-weight:800}.address{font-size:13px;line-height:1.35;margin-top:5px;color:#334155}
+.buttons{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:11px}.btn{border:0;border-radius:12px;min-height:43px;padding:10px 12px;font-size:13px;font-weight:850;text-decoration:none;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.btn.maps{background:var(--blue);color:#fff}.check-wrap{display:flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);border-radius:12px;padding:0 11px;background:#fff;font-size:12px;font-weight:850}.check-wrap input{width:21px;height:21px;accent-color:var(--green)}
+.bottom{position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(243,244,246,.93);backdrop-filter:blur(14px);border-top:1px solid rgba(226,232,240,.9);z-index:900}
+.bottom-inner{max-width:900px;margin:auto;display:grid;grid-template-columns:1fr 1fr;gap:9px}.next{background:var(--dark);color:#fff}.fullroute{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.ios-permission{display:none;position:fixed;left:12px;right:12px;bottom:84px;z-index:1200;max-width:560px;margin:auto;padding:12px 14px;border-radius:16px;background:#111827;color:#fff;box-shadow:0 10px 30px rgba(15,23,42,.3);font-size:13px;font-weight:750;align-items:center;justify-content:space-between;gap:12px}
+.ios-permission button{border:0;border-radius:11px;background:#fff;color:#111827;padding:9px 11px;font-weight:850;white-space:nowrap;cursor:pointer}
+.loading{padding:9px 12px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+@media(max-width:560px){.app{padding:10px 10px 100px}h1{font-size:22px}#map{height:355px}.buttons{grid-template-columns:1fr}.check-wrap{min-height:43px}.map-note{max-width:150px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar"><div><div class="eyebrow">Ruta de trabajo</div><h1>Dante · Restantes</h1><div class="subtitle">10 visitas restantes · progreso manual</div></div><div class="pill" id="topPill">0 / 10</div></header>
+<section class="card progress"><div class="progress-head"><div><div class="muted">Progreso de la ruta</div><div class="big" id="counter">0 completadas</div></div><div class="muted" id="remaining">10 pendientes</div></div><div class="track"><div class="fill" id="fill"></div></div></section>
+<section class="card map-card"><div class="map-head"><div><strong>Ruta completa</strong><div class="muted">orden recomendado</div></div><div class="map-note">pulsa un número para abrir la parada</div></div><div id="map"></div><div class="gps-status"><span id="gpsText">ubicación cargando…</span><strong id="headingText">brújula cargando…</strong></div><div class="loading" id="mapLoading">localizando puntos del mapa…</div></section>
+<div class="section-title"><h2>Paradas</h2><span>marca y desmarca manualmente</span></div><main id="list" class="list"></main>
+</div>
+<div class="ios-permission" id="iosPermission"><span>para mostrar hacia dónde miras, el navegador necesita un toque de permiso</span><button id="iosPermissionBtn" type="button">activar</button></div>
+<div class="bottom"><div class="bottom-inner"><button class="btn next" id="nextBtn">Ir al siguiente</button><a class="btn fullroute" id="routeBtn" target="_blank" rel="noopener">Ruta en Google Maps</a></div></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const points = [{"id": "005", "order": 1, "label": "Barcelona · Bon Pastor", "address": "Calle Estadella 95, Barcelona, España"}, {"id": "018", "order": 2, "label": "Barcelona · Trinitat Vella", "address": "Calle Torrent de Perera 24, Barcelona, España"}, {"id": "027", "order": 3, "label": "Barcelona · Trinitat Nova", "address": "Avinguda Meridiana 625, Barcelona, España"}, {"id": "023", "order": 4, "label": "Barcelona · Ciutat Meridiana", "address": "Avinguda Rasos de Peguera 15, Barcelona, España"}, {"id": "028", "order": 5, "label": "Barcelona · Ciutat Meridiana", "address": "Calle Pedraforca 8, Barcelona, España"}, {"id": "020", "order": 6, "label": "Barcelona · Sant Genís dels Agudells", "address": "Calle Elies Pagès 28, Barcelona, España"}, {"id": "007", "order": 7, "label": "Barcelona · Teixonera", "address": "Passeig Mare de Déu del Coll 173, Barcelona, España"}, {"id": "012", "order": 8, "label": "Barcelona · Vila de Gràcia", "address": "Calle Ramón y Cajal 156, Barcelona, España"}, {"id": "013", "order": 9, "label": "Barcelona · Sant Antoni", "address": "Calle Viladomat 109, Barcelona, España"}, {"id": "017", "order": 10, "label": "Barcelona · Marina de Port", "address": "Calle Ferrocarrils Catalans 91, Barcelona, España"}];
+const KEY = "miguel-sabadell_pro_v1";
+let state=(()=>{try{return JSON.parse(localStorage.getItem(KEY))||{}}catch(e){return{}}})();
+const map=L.map("map",{zoomControl:true,scrollWheelZoom:false}).setView([41.5,2.05],11);
+L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}",{maxZoom:19,attribution:"Tiles &copy; Esri"}).addTo(map);
+const markers={};let routeLayer=null;
+function save(){localStorage.setItem(KEY,JSON.stringify(state))}
+function mapsUrl(p){return"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(p.address)}
+function icon(p){return L.divIcon({className:"",html:`<div class="num-icon ${state[p.id]?"done":""}">${p.order}</div>`,iconSize:[31,31],iconAnchor:[15.5,15.5]})}
+function render(){
+ const list=document.getElementById("list");list.innerHTML="";let done=0;
+ points.forEach(p=>{const isDone=!!state[p.id];if(isDone)done++;const el=document.createElement("section");el.className="card stop"+(isDone?" done":"");el.dataset.id=p.id;
+ el.innerHTML=`<div class="order">${p.order}</div><div><div class="stop-title">${p.label}</div><div class="stop-id">ID ${p.id}</div><div class="address">${p.address}</div><div class="buttons"><a class="btn maps" target="_blank" rel="noopener" href="${mapsUrl(p)}">Abrir en Google Maps</a><label class="check-wrap"><input type="checkbox" ${isDone?"checked":""}> Hecho</label></div></div>`;
+ el.querySelector("input").addEventListener("change",ev=>{if(ev.target.checked)state[p.id]=true;else delete state[p.id];save();if(markers[p.id]){
+  const same=points.filter(x=>x.address.trim().toLowerCase()===p.address.trim().toLowerCase());
+  if(same.length===1) markers[p.id].setIcon(icon(p));
+}
+render()});
+
+ // Pulsar el número o cualquier zona libre de la tarjeta centra ese inmueble en el mapa.
+ el.addEventListener("click",ev=>{
+   if(ev.target.closest("a,button,input,label")) return;
+   const marker=markers[p.id];
+   if(marker){
+     map.setView(marker.getLatLng(),18,{animate:true});
+     marker.openPopup();
+     setTimeout(()=>document.getElementById("map").scrollIntoView({behavior:"smooth",block:"center"}),80);
+   }else{
+     document.getElementById("mapLoading").textContent="este punto todavía se está cargando en el mapa…";
+   }
+ });
+ list.appendChild(el)});
+ const pct=Math.round(done/points.length*100);document.getElementById("counter").textContent=`${done} completadas`;document.getElementById("remaining").textContent=`${points.length-done} pendientes`;document.getElementById("topPill").textContent=`${done} / ${points.length}`;document.getElementById("fill").style.width=pct+"%";
+}
+async function geocode(p){
+ const cacheKey="geo_"+p.id+"_"+p.address;try{const c=JSON.parse(localStorage.getItem(cacheKey));if(c&&c.lat&&c.lon)return c}catch(e){}
+ const u="https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates?f=json&maxLocations=1&outFields=Match_addr&singleLine="+encodeURIComponent(p.address);
+ const r=await fetch(u);if(!r.ok)throw new Error("geocoder "+r.status);const d=await r.json();if(!d.candidates||!d.candidates.length)return null;const c={lat:d.candidates[0].location.y,lon:d.candidates[0].location.x};localStorage.setItem(cacheKey,JSON.stringify(c));return c;
+}
+async function initRoute(){
+ const latlngs=[];let ok=0;
+
+ // Primero geocodificamos todos los puntos.
+ for(let i=0;i<points.length;i++){
+   const p=points[i];
+   document.getElementById("mapLoading").textContent=`localizando ${i+1}/${points.length}…`;
+   try{
+     const c=await geocode(p);
+     if(c){
+       p.lat=c.lat;p.lon=c.lon;ok++;
+       latlngs.push([p.lat,p.lon]);
+     }
+   }catch(e){console.warn(p.id,e)}
+ }
+
+ // Agrupamos puntos con la misma dirección exacta.
+ const groups={};
+ points.forEach(p=>{
+   if(!Number.isFinite(p.lat)||!Number.isFinite(p.lon))return;
+   const key=p.address.trim().toLowerCase();
+   if(!groups[key])groups[key]=[];
+   groups[key].push(p);
+ });
+
+ Object.values(groups).forEach(group=>{
+   const first=group[0];
+   let markerIcon;
+
+   if(group.length>1){
+     const nums=group.map(p=>p.order).sort((a,b)=>a-b);
+     const label=nums.length>=3
+       ? `${nums[0]}–${nums[nums.length-1]}`
+       : nums.join("/");
+     markerIcon=L.divIcon({
+       className:"",
+       html:`<div class="group-icon">${label}</div>`,
+       iconSize:[48,31],
+       iconAnchor:[24,15.5]
+     });
+   }else{
+     markerIcon=icon(first);
+   }
+
+   const m=L.marker([first.lat,first.lon],{icon:markerIcon}).addTo(map);
+
+   const popupHtml=group.length>1
+     ? `<strong>mismo bloque · ${group.length} activos</strong><br><br>` +
+       group
+         .sort((a,b)=>a.order-b.order)
+         .map(p=>`<div style="margin-bottom:7px"><b>${p.order} · ID ${p.id}</b><br><span style="font-size:12px">${p.label}</span></div>`)
+         .join("") +
+       `<a href="${mapsUrl(first)}" target="_blank">abrir bloque en google maps</a>`
+     : `<strong>${first.order} · ID ${first.id}</strong><br>${first.label}<br><span style="font-size:12px">${first.address}</span><br><br><a href="${mapsUrl(first)}" target="_blank">abrir en google maps</a>`;
+
+   m.bindPopup(popupHtml);
+
+   group.forEach(p=>{
+     markers[p.id]=m;
+   });
+
+   m.on("click",()=>{
+     const target=group.slice().sort((a,b)=>a.order-b.order)[0];
+     document.querySelector(`[data-id="${target.id}"]`)?.scrollIntoView({behavior:"smooth",block:"center"});
+   });
+ });
+
+ if(latlngs.length){
+   routeLayer=L.polyline(latlngs,{color:"#2563eb",weight:4,opacity:.45,dashArray:"8 8"}).addTo(map);
+   map.fitBounds(L.latLngBounds(latlngs).pad(.1))
+ }
+
+ document.getElementById("mapLoading").textContent=`${ok}/${points.length} puntos cargados`;
+
+ if(ok===points.length){
+   try{
+     const coords=points.map(p=>`${p.lon},${p.lat}`).join(";");
+     const r=await fetch("https://router.project-osrm.org/route/v1/driving/"+coords+"?overview=full&geometries=geojson");
+     const d=await r.json();
+     if(d.routes&&d.routes[0]){
+       if(routeLayer)map.removeLayer(routeLayer);
+       const ll=d.routes[0].geometry.coordinates.map(c=>[c[1],c[0]]);
+       routeLayer=L.polyline(ll,{color:"#2563eb",weight:5,opacity:.82}).addTo(map);
+       map.fitBounds(routeLayer.getBounds().pad(.07));
+       document.getElementById("mapLoading").textContent=`ruta cargada · ${(d.routes[0].distance/1000).toFixed(1)} km · ~${Math.round(d.routes[0].duration/60)} min conducción`;
+     }
+   }catch(e){}
+ }
+}
+function fullRouteUrl(){const ready=points.filter(p=>p.address);const origin=ready[0].address,destination=ready[ready.length-1].address;const waypoints=ready.slice(1,-1).map(p=>p.address).join("|");return"https://www.google.com/maps/dir/?api=1&origin="+encodeURIComponent(origin)+"&destination="+encodeURIComponent(destination)+"&waypoints="+encodeURIComponent(waypoints)+"&travelmode=driving"}
+document.getElementById("routeBtn").href=fullRouteUrl();document.getElementById("nextBtn").addEventListener("click",()=>{const p=points.find(x=>!state[x.id]);if(!p){alert("Todas las ubicaciones están marcadas como hechas.");return}window.open(mapsUrl(p),"_blank","noopener")});
+let watchId=null,userMarker=null,accuracyCircle=null,followUser=true,currentHeading=null;
+function userIcon(){const h=Number.isFinite(currentHeading)?currentHeading:0;return L.divIcon({className:"",html:`<div class="user-marker-wrap"><div class="user-arrow" style="transform:rotate(${h}deg)"></div><div class="user-dot"></div></div>`,iconSize:[34,34],iconAnchor:[17,17]})}
+function updateUserPosition(pos){const lat=pos.coords.latitude,lon=pos.coords.longitude,acc=pos.coords.accuracy||0;if(!userMarker){userMarker=L.marker([lat,lon],{icon:userIcon(),zIndexOffset:1000}).addTo(map)}else{userMarker.setLatLng([lat,lon]);userMarker.setIcon(userIcon())}if(!accuracyCircle){accuracyCircle=L.circle([lat,lon],{radius:acc,color:"#2563eb",weight:1,opacity:.18,fillColor:"#2563eb",fillOpacity:.06}).addTo(map)}else{accuracyCircle.setLatLng([lat,lon]);accuracyCircle.setRadius(acc)}document.getElementById("gpsText").textContent=`ubicación activa · precisión ±${Math.round(acc)} m`;if(followUser)map.setView([lat,lon],Math.max(map.getZoom(),16),{animate:true})}
+if("geolocation"in navigator){watchId=navigator.geolocation.watchPosition(updateUserPosition,err=>{document.getElementById("gpsText").textContent=err.code===1?"permiso de ubicación denegado":"ubicación no disponible";followUser=false},{enableHighAccuracy:true,maximumAge:1500,timeout:12000})}else document.getElementById("gpsText").textContent="ubicación no compatible";
+map.on("dragstart zoomstart",()=>{followUser=false});
+function normalizeHeading(v){let h=Number(v);if(!Number.isFinite(h))return null;h%=360;if(h<0)h+=360;return h}let smoothedHeading=null,lastHeadingPaint=0;function angleDelta(a,b){return((b-a+540)%360)-180}
+function orientationHandler(e){let raw=null;if(typeof e.webkitCompassHeading==="number")raw=e.webkitCompassHeading;else if(typeof e.alpha==="number")raw=360-e.alpha;raw=normalizeHeading(raw);if(raw===null)return;if(smoothedHeading===null)smoothedHeading=raw;else{const delta=angleDelta(smoothedHeading,raw);if(Math.abs(delta)>1.2)smoothedHeading=normalizeHeading(smoothedHeading+delta*.14)}const now=performance.now();if(now-lastHeadingPaint<80)return;lastHeadingPaint=now;currentHeading=smoothedHeading;document.getElementById("headingText").textContent=`orientación ${Math.round(currentHeading)}°`;if(userMarker)userMarker.setIcon(userIcon())}
+let orientationListenerAttached=false;function attachOrientation(){if(orientationListenerAttached)return;orientationListenerAttached=true;if("ondeviceorientationabsolute"in window)window.addEventListener("deviceorientationabsolute",orientationHandler,true);else window.addEventListener("deviceorientation",orientationHandler,true);document.getElementById("headingText").textContent="brújula activa"}
+async function startOrientation(){if(typeof DeviceOrientationEvent==="undefined"){document.getElementById("headingText").textContent="brújula no disponible";return}if(typeof DeviceOrientationEvent.requestPermission!=="function"){attachOrientation();return}document.getElementById("iosPermission").style.display="flex";document.getElementById("headingText").textContent="brújula pendiente de permiso"}
+document.getElementById("iosPermissionBtn").addEventListener("click",async()=>{try{const p=await DeviceOrientationEvent.requestPermission();if(p==="granted"){attachOrientation();document.getElementById("iosPermission").style.display="none"}else{document.getElementById("headingText").textContent="permiso de brújula denegado";document.getElementById("iosPermission").style.display="none"}}catch(e){document.getElementById("headingText").textContent="no se pudo activar la brújula"}});
+render();initRoute();startOrientation();
+</script>
+</body></html>
